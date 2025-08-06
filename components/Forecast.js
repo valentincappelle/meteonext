@@ -2,13 +2,12 @@
 import { useState, useEffect } from "react";
 
 export default function Forecast({ data }) {
-  if (!data || !data.list) return null;
 
   const [daysMap, setDaysMap] = useState({});
   const [days, setDays] = useState([]);
 
   useEffect(() => {
-    if (!data || !data.list) return;
+    if (!data?.list) return;
     const tempDaysMap = {};
     data.list.forEach(item => {
       // Formatage côté client uniquement

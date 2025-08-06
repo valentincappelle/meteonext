@@ -22,6 +22,27 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: "City manquant" }), { status: 400 });
   }
 
+  // Vérifie le nombre de favoris existants
+  const { data: favs, error: favError } = await supabase
+    .from("favorites")
+    .select("id")
+    .eq("user_id", session.user.id);
+  if (favError) return new Response(JSON.stringify({ error: favError.message }), { status: 500 });
+
+  // Récupère le statut premium (champ is_premium dans profiles ou user_metadata)
+  let isPremium = false;
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_premium")
+    .eq("id", session.user.id)
+    .single();
+  if (profile?.is_premium) isPremium = true;
+  if (session.user.is_premium) isPremium = true;
+
+  if (!isPremium && favs.length >= 3) {
+    return new Response(JSON.stringify({ error: "Nombre maximum de favoris atteint. Passe en Premium pour en ajouter plus." }), { status: 403 });
+  }
+
   // Insère le favori pour cet user
   const { error } = await supabase
     .from("favorites")

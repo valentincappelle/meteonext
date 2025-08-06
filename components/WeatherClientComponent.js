@@ -17,6 +17,10 @@ export default function WeatherClientComponent() {
 
   const searchedCity = weather?.name || "";
 
+  // Limite des favoris selon premium
+  const isPremium = session?.user?.premium || false; // Assume que 'premium' est dans user
+  const MAX_FAV = isPremium ? Infinity : 3;
+
   useEffect(() => {
     fetchWeather("Beauvais");
   }, []);
@@ -86,6 +90,15 @@ export default function WeatherClientComponent() {
       setMessage("Veuillez vous connecter pour gérer vos favoris.");
       return;
     }
+    // Contrôle limite ici
+    if (!isFavorite && favoris.length >= MAX_FAV) {
+      setMessage(
+        isPremium
+          ? "Chargement en cours..." // si premium, pas de limite, message générique
+          : "Nombre maximum de favoris atteint. Passe en Premium pour en ajouter plus."
+      );
+      return;
+    }
     setMessage("");
     setLoading(true);
     if (isFavorite) {
@@ -118,6 +131,11 @@ export default function WeatherClientComponent() {
     setLoading(false);
   };
 
+  // Nouvelle fonction : afficher la météo quand on clique sur un favori
+  const handleClickFavori = (city) => {
+    fetchWeather(city);
+  };
+
   return (
     <main
       className={`${
@@ -138,15 +156,36 @@ export default function WeatherClientComponent() {
             <SearchBar onSearch={fetchWeather} />
           </div>
         </div>
+
+        {/* Liste favoris cliquable */}
+        {session && favoris.length > 0 && (
+          <div className="mt-4 flex flex-wrap justify-center gap-3 max-w-5xl mx-auto">
+            {favoris.map((city) => (
+              <button
+                key={city}
+                onClick={() => handleClickFavori(city)}
+                className={`px-4 py-2 rounded-full border border-white/50 bg-white/20 text-white transition hover:bg-white/40 ${
+                  searchedCity === city ? "font-bold underline" : ""
+                }`}
+                aria-label={`Afficher la météo pour ${city}`}
+                title={`Afficher la météo pour ${city}`}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        )}
       </header>
 
       {searchedCity && (
         <section className="w-full max-w-md mx-auto mb-6">
-          <div className="
-            flex items-center justify-between
-            bg-[#968c8c]/50 rounded-xl md:rounded-2xl p-8 shadow-[0_10px_25px_rgba(0,0,0,0.4)]
-            backdrop-blur-md border border-white/30
-          ">
+          <div
+            className="
+              flex items-center justify-between
+              bg-[#968c8c]/50 rounded-xl md:rounded-2xl p-8 shadow-[0_10px_25px_rgba(0,0,0,0.4)]
+              backdrop-blur-md border border-white/30
+              "
+          >
             <h2 className="text-2xl font-semibold text-white">{searchedCity}</h2>
             <div className="flex items-center gap-3">
               <span className="text-white font-medium select-none">
@@ -177,7 +216,10 @@ export default function WeatherClientComponent() {
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">
             Prévisions sur 5 jours
           </h2>
-          <Forecast data={forecast} />
+          {session?.user?.is_premium
+            ? (forecast?.list && <Forecast data={forecast} />)
+            : <div className="text-center text-gray-300">Réservé aux membres Premium</div>
+          }
         </section>
       </div>
 

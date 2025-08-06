@@ -1,36 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🌦️ MétéoApp Next.js
 
-## Getting Started
+Application météo moderne avec Next.js, Tailwind, Supabase et Stripe.
 
-First, run the development server:
+## Fonctionnalités
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Recherche météo instantanée** (sans compte)
+- **Authentification sécurisée** (NextAuth + Supabase)
+- **Gestion du profil utilisateur** (modification nom, email, mot de passe, suppression)
+- **Favoris** (ajout/suppression, limite selon abonnement)
+- **Abonnement Premium** (paiement Stripe, favoris illimités, prévisions sur 5 jours)
+- **UI responsive et moderne** (Tailwind CSS)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Installation
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+1. Clone le repo :
+   ```bash
+   git clone https://github.com/valentincappelle/meteonext.git
+   cd meteonext
+   ```
+2. Installe les dépendances :
+   ```bash
+   npm install
+   ```
+3. Configure les variables d'environnement dans `.env.local` :
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=...
+   SUPABASE_SERVICE_ROLE=...
+   NEXTAUTH_SECRET=...
+   STRIPE_SECRET_KEY=...
+   STRIPE_WEBHOOK_SECRET=...
+   ```
+4. Lance le serveur :
+   ```bash
+   npm run dev
+   ```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Structure du projet
 
-## Learn More
+- `app/` : pages Next.js (accueil, auth, favoris, profil, premium...)
+- `components/` : composants React réutilisables
+- `lib/` : logique d'authentification
+- `public/` : images et assets
+- `api/` : routes API (auth, favoris, profil, Stripe...)
 
-To learn more about Next.js, take a look at the following resources:
+## Démo
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Lien Vercel](https://meteonext.vercel.app) *(à compléter)*
+- ![screenshot](public/images/logometeoblanc.png)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Choix techniques
 
-## Deploy on Vercel
+- **Next.js 15** (App Router)
+- **Supabase** (base de données, auth)
+- **NextAuth** (gestion session JWT)
+- **Stripe** (paiement premium)
+- **Tailwind CSS** (UI moderne)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Fonctionnement Premium
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Paiement Stripe → webhook → mise à jour du champ `is_premium` dans Supabase
+- Limite de favoris levée et prévisions 5 jours débloquées
+
+## Sécurité
+
+- Toutes les routes API vérifient la session utilisateur
+- Webhook Stripe sécurisé par signature
+
+## Auteur
+
+Valentin Cappelle
+
+---
+
+> Ce projet est un exemple complet d’application Next.js moderne, prêt à être déployé sur Vercel.

@@ -1,20 +1,31 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signOut, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export default function Profile() {
-  const { data: session, update } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [editing, setEditing] = useState(false);
-  const [inputName, setInputName] = useState(session?.user?.name || "");
-  const [inputEmail, setInputEmail] = useState(session?.user?.email || "");
+  const [inputName, setInputName] = useState("");
+  const [inputEmail, setInputEmail] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    getUserData();
+  }, []);
+
+  async function getUserData() {
+    const response = await fetch('/api/profile/get');
+    const { user } = await response.json();
+    setUserData(user);
+    setInputName(user?.name || "");
+    setInputEmail(user?.email || "");
+  }
 
   // On met à jour ce qui est réellement rempli, on envoie seulement ce qui a changé
   const handleUpdate = async (e) => {
@@ -23,8 +34,8 @@ export default function Profile() {
     setError("");
 
     const updateFields = {};
-    if (inputName !== session.user.name && inputName) updateFields.name = inputName;
-    if (inputEmail !== session.user.email && inputEmail) updateFields.email = inputEmail;
+    if (inputName !== userData?.name && inputName) updateFields.name = inputName;
+    if (inputEmail !== userData?.email && inputEmail) updateFields.email = inputEmail;
     if (!updateFields.name && !updateFields.email) {
       setError("Merci de changer le nom ou l'email pour enregistrer ✅");
       return;
@@ -40,12 +51,9 @@ export default function Profile() {
       setMessage("Profil mis à jour !");
       setEditing(false);
       // Met à jour le state local pour afficher les nouvelles infos immédiatement
-      if (updateFields.name) session.user.name = updateFields.name;
-      if (updateFields.email) session.user.email = updateFields.email;
-      setInputName(updateFields.name || session.user.name);
-      setInputEmail(updateFields.email || session.user.email);
-      await update();
-      router.refresh();
+      setInputName(updateFields.name);
+      setInputEmail(updateFields.email);
+      await getUserData();
     } else {
       const json = await res.json();
       setError(json.error || "Erreur lors de la mise à jour.");
@@ -70,7 +78,7 @@ export default function Profile() {
     // Valide le mot de passe actuel côté client
     const signInResult = await signIn("credentials", {
       redirect: false,
-      email: session.user.email,
+      email: inputEmail || userData?.email,
       password: currentPassword,
     });
 
@@ -118,7 +126,7 @@ export default function Profile() {
     }
   };
 
-  if (!session) return <p>Chargement…</p>;
+  if (!session || !userData) return <p>Chargement…</p>;
 
   return (
     <div className="max-w-md mx-auto mt-14 p-8 bg-white rounded-lg shadow-lg border border-gray-200">
@@ -131,11 +139,11 @@ export default function Profile() {
       <div className="mb-6 space-y-2">
         <div>
           <span className="font-semibold text-gray-900">Nom :</span>{" "}
-          <span className="text-gray-800">{session.user.name ?? <span className="italic text-gray-400">non renseigné</span>}</span>
+          <span className="text-gray-800">{inputName ?? <span className="italic text-gray-400">non renseigné</span>}</span>
         </div>
         <div>
           <span className="font-semibold text-gray-900">Email :</span>{" "}
-          <span className="text-gray-800">{session.user.email ?? <span className="italic text-gray-400">non renseigné</span>}</span>
+          <span className="text-gray-800">{inputEmail ?? <span className="italic text-gray-400">non renseigné</span>}</span>
         </div>
       </div>
 
@@ -178,8 +186,8 @@ export default function Profile() {
               className="flex-1 bg-gray-300 text-gray-900 font-semibold py-2 rounded hover:bg-gray-400 transition"
               onClick={() => {
                 setEditing(false);
-                setInputName(session.user.name || "");
-                setInputEmail(session.user.email || "");
+                setInputName(userData?.name || "");
+                setInputEmail(userData?.email || "");
                 setError(""); setMessage("");
               }}
             >

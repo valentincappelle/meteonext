@@ -9,11 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^7.8.0",
     "@supabase/supabase-js": "^2.53.0",
     "next": "^15.4.5",
     "next-auth": "^4.24.11",
     "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "react-dom": "^19.1.1",
+    "stripe": "^18.4.0"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.11",

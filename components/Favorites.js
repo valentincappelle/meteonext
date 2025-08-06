@@ -9,6 +9,10 @@ export default function Favorites() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Flag premium selon session
+  const isPremium = session?.user?.premium || false;
+  const MAX_FAV = isPremium ? Infinity : 3;
+
   useEffect(() => {
     if (!session) return;
     setLoading(true);
@@ -23,6 +27,17 @@ export default function Favorites() {
 
   const addFavori = async () => {
     if (!city.trim()) return;
+
+    // Blocage si la limite est atteinte
+    if (favoris.length >= MAX_FAV) {
+      setMessage(
+        isPremium
+          ? "Chargement en cours..."
+          : `Tu as atteint la limite de ${MAX_FAV} favoris. Passe en Premium pour en ajouter plus !`
+      );
+      return;
+    }
+
     setLoading(true);
     const res = await fetch("/api/favorites/add", {
       method: "POST",
@@ -72,10 +87,17 @@ export default function Favorites() {
           value={city}
           onChange={e => setCity(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') addFavori(); }}
+          disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}
+          aria-label="Saisissez une ville à ajouter aux favoris"
         />
         <button
           onClick={addFavori}
-          className="bg-blue-600 text-white rounded-md px-7 py-2 font-semibold hover:bg-blue-700 transition"
+          disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}
+          className={`bg-blue-600 text-white rounded-md px-7 py-2 font-semibold hover:bg-blue-700 transition
+            ${loading || (!isPremium && favoris.length >= MAX_FAV) ? "opacity-50 cursor-not-allowed" : ""}
+            `}
+          aria-disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}
+          aria-label="Ajouter la ville aux favoris"
         >
           Ajouter
         </button>
@@ -93,6 +115,7 @@ export default function Favorites() {
               <button
                 className="text-red-600 hover:underline font-semibold"
                 onClick={() => removeFavori(fav.city)}
+                aria-label={`Supprimer le favori ${fav.city}`}
               >
                 Supprimer
               </button>
