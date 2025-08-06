@@ -5,6 +5,7 @@ import SearchBar from "./SearchBar";
 import CurrentWeather from "./CurrentWeather";
 import Forecast from "./Forecast";
 import Loader from "./Loader";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function WeatherClientComponent() {
   const { data: session } = useSession();
@@ -15,6 +16,8 @@ export default function WeatherClientComponent() {
   const [favoris, setFavoris] = useState([]);
   const [message, setMessage] = useState("");
   const [isPremium, setIsPremium] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const searchedCity = weather?.name || "";
 
@@ -33,8 +36,10 @@ export default function WeatherClientComponent() {
   }, [session]);
 
   useEffect(() => {
-    fetchWeather("Beauvais");
-  }, []);
+    // Si un paramètre ?ville= est présent, on l'utilise, sinon Beauvais
+    const villeParam = searchParams.get("ville");
+    fetchWeather(villeParam || "Beauvais");
+  }, [searchParams]);
 
   // Charger les favoris de l'utilisateur connecté
   useEffect(() => {

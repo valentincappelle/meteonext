@@ -1,14 +1,25 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
 export default function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { data: session } = useSession();
+  const [isPremium, setIsPremium] = useState(undefined); // undefined = loading
 
   // Remplace par ton vrai Price ID Stripe !
   const PRICE_ID = "price_1RspYKKYZeX4hWaCMZP1qZoh";
+
+  // Récupère le statut premium à jour
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/profile/get")
+      .then(res => res.json())
+      .then(data => {
+        setIsPremium(!!data.user?.is_premium);
+      });
+  }, [session]);
 
   async function subscribe() {
     setLoading(true);
@@ -43,7 +54,9 @@ export default function PremiumPage() {
         </ul>
         <p className="mt-2">Paiement sécurisé via Stripe.</p>
       </div>
-      {session?.user?.is_premium ? (
+      {isPremium === undefined ? (
+        <div className="text-gray-500 text-lg mb-4">Chargement...</div>
+      ) : isPremium ? (
         <div className="text-green-600 font-bold text-xl mb-4">Vous êtes déjà Premium !</div>
       ) : (
         <button
