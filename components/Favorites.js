@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Favorites() {
   const { data: session } = useSession();
@@ -8,9 +8,21 @@ export default function Favorites() {
   const [city, setCity] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const inputRef = useRef(null);
 
-  // Flag premium selon session
-  const isPremium = session?.user?.premium || false;
+  // Récupère le statut premium à jour depuis l'API
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/profile/get")
+      .then(res => res.json())
+      .then(data => {
+        if (data.user?.is_premium) setIsPremium(true);
+        else setIsPremium(false);
+      });
+  }, [session]);
+
   const MAX_FAV = isPremium ? Infinity : 3;
 
   useEffect(() => {
@@ -25,9 +37,38 @@ export default function Favorites() {
       .finally(() => setLoading(false));
   }, [session]);
 
+  // Autocomplétion des villes françaises (API geo.api.gouv.fr)
+  const handleInput = async (e) => {
+    const val = e.target.value;
+    setCity(val);
+    if (val.trim().length < 1) {
+      setSuggestions([]);
+      return;
+    }
+    try {
+      const resp = await fetch(
+        `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(val)}&fields=nom&boost=population&limit=5`
+      );
+      const cities = await resp.json();
+      setSuggestions(cities.map(city => city.nom));
+    } catch {
+      setSuggestions([]);
+    }
+  };
+
+  const handleSuggestion = (name) => {
+    setCity(name);
+    setSuggestions([]);
+    inputRef.current?.focus();
+  };
+
   const addFavori = async () => {
     if (!city.trim()) return;
-
+    // Vérifie si la ville est déjà dans les favoris (insensible à la casse et espaces)
+    if (favoris.some(f => f.city.trim().toLowerCase() === city.trim().toLowerCase())) {
+      setMessage("Cette ville est déjà dans vos favoris.");
+      return;
+    }
     // Blocage si la limite est atteinte
     if (favoris.length >= MAX_FAV) {
       setMessage(
@@ -37,7 +78,6 @@ export default function Favorites() {
       );
       return;
     }
-
     setLoading(true);
     const res = await fetch("/api/favorites/add", {
       method: "POST",
@@ -79,17 +119,51 @@ export default function Favorites() {
       <h2 className="text-2xl font-bold mb-8 text-center text-gray-900">Mes Favoris</h2>
       {message && <div className="mb-4 text-center text-green-700 font-bold">{message}</div>}
 
-      <div className="flex gap-3 mb-8">
-        <input
-          type="text"
-          className="flex-grow border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-          placeholder="Ajouter une ville"
-          value={city}
-          onChange={e => setCity(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') addFavori(); }}
-          disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}
-          aria-label="Saisissez une ville à ajouter aux favoris"
-        />
+      <div className="flex gap-3 mb-8 relative">
+        <div className="flex-grow relative">
+          <input
+            ref={inputRef}
+            type="text"
+            className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+            placeholder="Ajouter une ville"
+            value={city}
+            onChange={handleInput}
+            onKeyDown={e => {
+              if (e.key === 'Enter') addFavori();
+              if (e.key === 'ArrowDown' && suggestions.length > 0) {
+                document.getElementById('suggestion-0')?.focus();
+              }
+            }}
+            disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}
+            aria-label="Saisissez une ville à ajouter aux favoris"
+            autoComplete="off"
+            onBlur={() => setTimeout(() => setSuggestions([]), 100)}
+            onFocus={() => city && suggestions.length > 0 && setSuggestions(suggestions)}
+          />
+          {suggestions.length > 0 && (
+            <ul className="absolute z-10 left-0 right-0 bg-white border border-gray-200 rounded-md mt-1 shadow-lg max-h-56 overflow-y-auto">
+              {suggestions.map((name, idx) => (
+                <li
+                  key={name + idx}
+                  id={`suggestion-${idx}`}
+                  tabIndex={0}
+                  className="px-4 py-2 cursor-pointer text-gray-900 hover:bg-blue-100 hover:text-blue-800"
+                  onMouseDown={() => handleSuggestion(name)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') handleSuggestion(name);
+                    if (e.key === 'ArrowDown') document.getElementById(`suggestion-${idx+1}`)?.focus();
+                    if (e.key === 'ArrowUp') {
+                      if (idx === 0) inputRef.current?.focus();
+                      else document.getElementById(`suggestion-${idx-1}`)?.focus();
+                    }
+                  }}
+                >
+                  {name}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <button
           onClick={addFavori}
           disabled={loading || (!isPremium && favoris.length >= MAX_FAV)}

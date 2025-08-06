@@ -29,6 +29,12 @@ export async function POST(request) {
     .eq("user_id", session.user.id);
   if (favError) return new Response(JSON.stringify({ error: favError.message }), { status: 500 });
 
+  // Vérifie si la ville existe déjà pour cet utilisateur (insensible à la casse et espaces)
+  const doublon = favs.some(fav => fav.city && fav.city.trim().toLowerCase() === city.trim().toLowerCase());
+  if (doublon) {
+    return new Response(JSON.stringify({ error: "Cette ville est déjà dans vos favoris." }), { status: 409 });
+  }
+
   // Récupère le statut premium (champ is_premium dans profiles ou user_metadata)
   let isPremium = false;
   const { data: profile } = await supabase

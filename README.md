@@ -45,7 +45,7 @@ Application météo moderne avec Next.js, Tailwind, Supabase et Stripe.
 
 ## Démo
 
-- [Lien Vercel](https://meteonext.vercel.app) *(à compléter)*
+- [Lien Vercel](https://meteonext.vercel.app) 
 - ![screenshot](public/images/logometeoblanc.png)
 
 ## Choix techniques

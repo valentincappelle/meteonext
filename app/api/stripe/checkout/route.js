@@ -8,12 +8,18 @@ export async function POST(request) {
   try {
     // Récupère le token JWT pour obtenir l'ID utilisateur
     const token = await getToken({ req: request });
+    console.log("[STRIPE CHECKOUT] Token reçu:", token);
+    
     if (!token?.id) {
+      console.error("[STRIPE CHECKOUT] Utilisateur non authentifié");
       return NextResponse.json({ error: "Utilisateur non authentifié" }, { status: 401 });
     }
-    // Log pour debug la valeur de NEXT_PUBLIC_URL
-    console.log("[STRIPE] NEXT_PUBLIC_URL:", process.env.NEXT_PUBLIC_URL);
+
+    console.log("[STRIPE CHECKOUT] userId:", token.id);
+    console.log("[STRIPE CHECKOUT] NEXT_PUBLIC_URL:", process.env.NEXT_PUBLIC_URL);
+    
     const publicUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       mode: "subscription",
@@ -28,8 +34,15 @@ export async function POST(request) {
       client_reference_id: token.id,
     });
 
+    console.log("[STRIPE CHECKOUT] Session créée:", {
+      sessionId: session.id,
+      clientReferenceId: session.client_reference_id,
+      url: session.url
+    });
+
     return NextResponse.json({ url: session.url });
   } catch (err) {
+    console.error("[STRIPE CHECKOUT] Erreur:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

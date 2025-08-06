@@ -14,12 +14,23 @@ export default function WeatherClientComponent() {
   const [weatherType, setWeatherType] = useState("");
   const [favoris, setFavoris] = useState([]);
   const [message, setMessage] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
 
   const searchedCity = weather?.name || "";
 
-  // Limite des favoris selon premium
-  const isPremium = session?.user?.premium || false; // Assume que 'premium' est dans user
+  // Limite des favoris selon premium (récupéré dynamiquement)
   const MAX_FAV = isPremium ? Infinity : 3;
+
+  // Récupère le statut premium à jour depuis l'API
+  useEffect(() => {
+    if (!session) return;
+    fetch("/api/profile/get")
+      .then(res => res.json())
+      .then(data => {
+        if (data.user?.is_premium) setIsPremium(true);
+        else setIsPremium(false);
+      });
+  }, [session]);
 
   useEffect(() => {
     fetchWeather("Beauvais");
@@ -88,6 +99,11 @@ export default function WeatherClientComponent() {
   const toggleFavori = async () => {
     if (!session) {
       setMessage("Veuillez vous connecter pour gérer vos favoris.");
+      return;
+    }
+    // Vérifie si la ville est déjà dans les favoris (insensible à la casse et espaces)
+    if (!isFavorite && favoris.some(c => c.trim().toLowerCase() === searchedCity.trim().toLowerCase())) {
+      setMessage("Cette ville est déjà dans vos favoris.");
       return;
     }
     // Contrôle limite ici
@@ -216,7 +232,7 @@ export default function WeatherClientComponent() {
           <h2 className="text-2xl md:text-3xl font-bold mb-6 text-center text-white">
             Prévisions sur 5 jours
           </h2>
-          {session?.user?.is_premium
+          {isPremium
             ? (forecast?.list && <Forecast data={forecast} />)
             : <div className="text-center text-gray-300">Réservé aux membres Premium</div>
           }
