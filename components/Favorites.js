@@ -224,17 +224,44 @@ export default function Favorites() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {favoris.map(fav => {
               const weather = weatherData[fav.city];
-              const bg = weather ? getWeatherBg(weather) : "from-orange-200 to-yellow-300";
+              // Détermine l'image de fond météo
+              let bgImage = null;
+              if (weather) {
+                const main = weather.weather[0].main.toLowerCase();
+                if (main.includes("cloud")) {
+                  if (weather.weather[0].description.toLowerCase().includes("peu nuageux")) {
+                    bgImage = "/images/peunuageux.jpg";
+                  } else {
+                    bgImage = "/images/cloudy.jpg";
+                  }
+                } else if (["rain", "drizzle", "thunderstorm"].includes(main)) {
+                  bgImage = "/images/rainy.jpg";
+                } else if (main.includes("snow")) {
+                  bgImage = "/images/snowy.jpg";
+                } else if (["mist", "fog"].includes(main)) {
+                  bgImage = "/images/Foggy.jpg";
+                } else if (main.includes("clear")) {
+                  bgImage = "/images/sunny.jpg";
+                }
+              }
               return (
                 <div
                   key={fav.id || fav.city}
-                  className={`bg-gradient-to-br ${bg} rounded-xl shadow-lg p-6 flex flex-col items-center relative group min-h-[260px] transition-transform hover:scale-105`}
+                  className="rounded-xl shadow-lg p-6 flex flex-col items-center relative group min-h-[260px] transition-transform hover:scale-105 text-white"
                   onClick={e => {
                     if (e.target.closest('button')) return;
                     router.push(`/?ville=${encodeURIComponent(fav.city)}`);
                   }}
                   title={`Voir la météo de ${fav.city}`}
-                  style={{ cursor: 'pointer' }}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundBlendMode: 'multiply',
+                    backgroundColor: 'rgba(0,0,0,0.25)',
+                    backgroundImage: bgImage ? `url('${bgImage}')` : undefined,
+                    backgroundPosition: 'center',
+                    backgroundSize: 'cover',
+                    backgroundRepeat: 'no-repeat',
+                  }}
                 >
                   <h3 className="text-xl font-bold mb-2 text-gray-900 text-center w-full break-words">{fav.city}</h3>
                   {weather ? (
