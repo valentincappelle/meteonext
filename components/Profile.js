@@ -14,6 +14,8 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [userData, setUserData] = useState(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     getUserData();
@@ -111,12 +113,17 @@ export default function Profile() {
 
   // --------- Suppression du compte ----------
   const handleDelete = async () => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) return;
+    if (!deletePassword) {
+      setError("Veuillez entrer votre mot de passe pour confirmer la suppression.");
+      return;
+    }
     setError("");
     setMessage("");
-
-    const res = await fetch("/api/profile/delete", { method: "DELETE" });
-
+    const res = await fetch("/api/profile/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletePassword }),
+    });
     if (res.ok) {
       setMessage("Compte supprimé. Déconnexion...");
       setTimeout(() => signOut({ callbackUrl: "/" }), 1200);
@@ -283,14 +290,43 @@ export default function Profile() {
         )}
 
         <button
-          className="w-full mt-6 mb-4 bg-red-600 text-white font-semibold py-2 px-4 rounded hover:bg-red-700 transition shadow"
-          onClick={handleDelete}
+          className="w-full mt-4 mb-2 bg-red-600 text-white font-semibold py-2 px-4 rounded hover:bg-red-700 transition shadow"
+          onClick={() => setShowDeleteConfirm(true)}
         >
           Supprimer mon compte
         </button>
-
+        {showDeleteConfirm && (
+          <form
+            className="w-full mb-2 flex flex-col gap-3"
+            onSubmit={e => { e.preventDefault(); handleDelete(); }}
+          >
+            <input
+              type="password"
+              className="w-full p-2 border rounded text-gray-900 bg-white/80 focus:ring-2 focus:ring-red-400"
+              placeholder="Mot de passe pour confirmer la suppression"
+              value={deletePassword}
+              onChange={e => setDeletePassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            <div className="flex gap-3">
+              <button
+                type="submit"
+                className="flex-1 bg-red-600 text-white font-semibold py-2 rounded hover:bg-red-700 transition shadow"
+              >
+                Confirmer la suppression
+              </button>
+              <button
+                type="button"
+                className="flex-1 bg-gray-300 text-gray-900 font-semibold py-2 rounded hover:bg-gray-400 transition shadow"
+                onClick={() => { setShowDeleteConfirm(false); setDeletePassword(""); setError(""); setMessage(""); }}
+              >
+                Annuler
+              </button>
+            </div>
+          </form>
+        )}
         <button
-          className="w-full bg-gray-800 text-white font-semibold py-2 px-4 rounded hover:bg-gray-900 transition shadow"
+          className="w-full mb-2 bg-gray-800 text-white font-semibold py-2 px-4 rounded hover:bg-gray-900 transition shadow"
           onClick={() => signOut({ callbackUrl: "/" })}
         >
           Déconnexion

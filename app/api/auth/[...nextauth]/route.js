@@ -53,7 +53,7 @@ export const authOptions = {
       return session;
     },
   },
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: 3600 },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
